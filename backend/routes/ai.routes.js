@@ -1,8 +1,9 @@
 import {Router} from 'express';
+import {getResult} from '../controllers/ai.controller.js';
 
 const router = Router();
 
-router.get('/get-result',)
+router.get('/get-result',getResult);
 
 
-export defualt router;
+export default router;

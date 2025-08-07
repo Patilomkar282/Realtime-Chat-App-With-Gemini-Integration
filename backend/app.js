@@ -6,6 +6,7 @@ import connectDB from './db/db.js';
 import ProjectRoutes from './routes/project.routes.js';
 import userRoutes from './routes/user.routes.js';
 import cors from 'cors';
+import aiRoutes from './routes/ai.routes.js'
 
 connectDB();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/user', userRoutes);
 app.use('/project', ProjectRoutes);
+app.use('/ai',aiRoutes);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the SOEN Backend API');

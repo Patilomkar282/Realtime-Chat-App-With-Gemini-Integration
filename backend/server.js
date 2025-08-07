@@ -5,6 +5,8 @@ import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import project from './models/project.model.js';
+import { generateResult } from './services/ai.service.js';
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -20,7 +22,9 @@ io.use(async(socket, next) => {
     try{
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1]; // Extract token from handshake headers
         const projectId=socket.handshake.query.projectId; 
+        
         if(!mongoose.Types.ObjectId.isValid(projectId)) {
+         
             return next(new Error('Invalid project ID'));
 
         }
@@ -50,13 +54,31 @@ io.use(async(socket, next) => {
 });
 io.on('connection', socket => {
     socket.roomId=socket.project._id.toString()
-    console.log('New client connected');
+    
+    
     socket.join(socket.roomId); 
     
-    socket.on('projectMessage', (data) => {
-        
-
+    socket.on('projectMessage', async data => {
+        const message = data.message;
+        const aiIsPresentInMessage = message.includes('@ai');
         socket.broadcast.to(socket.roomId).emit('projectMessage', data);
+        if(aiIsPresentInMessage){
+            const prompt =message.replace('@ai','');
+            const result = await generateResult(prompt)
+            io.to(socket.roomId).emit('projectMessage',{
+                 message: JSON.stringify({ text: result }),
+                sender:{
+                    _id:'ai',
+                    email:'AI'
+                }
+
+            })
+
+           
+            return ;
+        }
+        
+        console.log("user connected");
          // Broadcast to all clients in the project room
     });
   socket.on('disconnect', () => { 

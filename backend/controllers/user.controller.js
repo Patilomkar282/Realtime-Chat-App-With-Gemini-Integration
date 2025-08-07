@@ -5,8 +5,6 @@ import { validationResult } from "express-validator";
 import { get } from 'mongoose';
 
 
-
-
 export const createUserController = async (req, res) => {
     console.log("Incoming body:", req.body);
 
@@ -27,6 +25,8 @@ export const createUserController = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 export const createLoginController = async (req, res) => {
   const errors = validationResult(req);
@@ -52,6 +52,8 @@ export const createLoginController = async (req, res) => {
   }
 }
 
+
+
 export const profilecontroller = async (req, res) => {
   try {
  
@@ -67,6 +69,9 @@ export const profilecontroller = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
+
+
+
 
 export const logoutController = async (req, res) => {
     try {
@@ -86,6 +91,7 @@ export const logoutController = async (req, res) => {
     }
     }
 
+
 export const getAllUsers = async (req, res) => {
   try{
     const loggedInUser = await User.findOne({ email: req.user.email });
@@ -102,6 +108,9 @@ export const getAllUsers = async (req, res) => {
   }
 
 }
+
+
+
 
 
 
