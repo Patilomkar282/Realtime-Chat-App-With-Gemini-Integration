@@ -32,6 +32,11 @@ const Project = () => {
         const [project, setProject] = useState(location.state.project || {}); // Initialize with an empty object if no project is passed
         const messageBox = React.useRef();
         const [ messages, setMessages ] = useState([])
+        const[fileTree,setfileTree]=useState({})
+
+        const[currentFile, setCurrentFile]=useState(null);
+        const[openfiles,setOpenFiles]=useState([]);
+
     
 const handleUserSelect = (id) => {
         const newSet = new Set(selectedUserId);
@@ -70,35 +75,45 @@ function addCollaborators() {
         setMessage("")
 
     }
+function WriteAiMessage(message) {
+  let messageObject;
 
-     function WriteAiMessage(message) {
-
-        const messageObject = JSON.parse(message)
-
-        return (
-            <div
-                className='overflow-auto bg-slate-950 text-white rounded-sm p-2'
-            >
-                <Markdown
-                    children={messageObject.text}
-                    options={{
-                        overrides: {
-                            code: SyntaxHighlightedCode,
-                        },
-                    }}
-                />
-            </div>)
+  if (typeof message === 'object') {
+    // Already parsed (socket sent an object)
+    messageObject = message;
+  } else {
+    try {
+      messageObject = JSON.parse(message);
+    } catch {
+      messageObject = { text: String(message) }; // fallback
     }
+  }
+
+  return (
+    <div className="overflow-auto bg-slate-950 text-white rounded-sm p-2">
+      <Markdown
+        children={messageObject.text}
+        options={{
+          overrides: { code: SyntaxHighlightedCode },
+        }}
+      />
+    </div>
+  );
+}
+
+
 
   useEffect(() => {
 
     initializeSocket(project._id);
-    receiveMessage('projectMessage',data =>{
-      
-      console.log(data)
-      setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
-            
-    })
+   receiveMessage('projectMessage', data => {
+  const message = JSON.parse(data.message); // already an object
+  console.log(message);
+  if (message.fileTree) {
+    setfileTree(message.fileTree);
+  }
+  setMessages(prev => [...prev, data]);
+});
 
 
     axios.get(`/project/get-project/${location.state.project._id}`).then((res) => {
@@ -202,6 +217,91 @@ function addCollaborators() {
                 </div>
             </div>
         </section>
+
+        <section className="right bg-red-50 flex-grow h-full flex">
+          <div className="explorer h-full max-w-65 min-w-52 py-2  bg-slate-400">
+            <div className="file-tree w-full space-y-2">
+                {
+                  Object.keys(fileTree).map((file, index) => {
+                    return (
+                      <button
+                                    key={index}
+                                    onClick={() => {
+                                        setCurrentFile(file)
+                                        setOpenFiles((prev) => [...new Set([...prev, file])]);
+                                        
+                                    }}
+                                    className="tree-element cursor-pointer p-2 px-4 flex items-center gap-2 bg-slate-300 w-full">
+                                    <p
+                                        className='font-semibold text-lg'
+                                    >{file}</p>
+                                </button>
+                    );
+                  })
+                }
+
+            </div>
+          </div>
+          {currentFile && (
+            <div className="code-editor flex flex-col flex-grow h-full">
+
+                <div className="top flex ">
+                  {
+                                openfiles.map((file, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentFile(file)}
+                                        className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
+                                        <p
+                                            className='font-semibold text-lg'
+                                        >{file}</p>
+                                    </button>
+                                ))
+                    }
+                </div>
+                <div className="bottom flex flex-grow">
+                  {
+                    fileTree[currentFile]&&(
+                      <textarea
+                          value={
+                            typeof fileTree[currentFile].content === 'string'
+                              ? fileTree[currentFile].content
+                              : JSON.stringify(fileTree[currentFile].content, null, 2)
+                          }
+                          onChange={(e) => {
+                            setfileTree({
+                              ...fileTree,
+                              [currentFile]: {
+                                content: e.target.value
+                              }
+                            });
+                          }}
+                          className="w-full h-full p-4 bg-slate-50 outline-none"
+                        />
+  
+                    )
+                  }
+
+                </div>
+
+            </div>
+
+          )}
+          
+
+
+
+
+
+
+        </section>
+
+
+
+        
+
+
+
 
          {/* Modal for users list */}
         {isModalOpen && (

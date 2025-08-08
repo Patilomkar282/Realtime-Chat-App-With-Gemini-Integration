@@ -62,22 +62,25 @@ io.on('connection', socket => {
         const message = data.message;
         const aiIsPresentInMessage = message.includes('@ai');
         socket.broadcast.to(socket.roomId).emit('projectMessage', data);
-        if(aiIsPresentInMessage){
-            const prompt =message.replace('@ai','');
-            const result = await generateResult(prompt)
-            io.to(socket.roomId).emit('projectMessage',{
-                 message: JSON.stringify({ text: result }),
-                sender:{
-                    _id:'ai',
-                    email:'AI'
-                }
+         if (aiIsPresentInMessage) {
 
+
+            const prompt = message.replace('@ai', '');
+
+            const result = await generateResult(prompt);
+
+
+            io.to(socket.roomId).emit('project-message', {
+                 message: JSON.stringify({ text: result }),
+                sender: {
+                    _id: 'ai',
+                    email: 'AI'
+                }
             })
 
-           
-            return ;
+
+            return
         }
-        
         console.log("user connected");
          // Broadcast to all clients in the project room
     });
