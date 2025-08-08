@@ -4,6 +4,10 @@ import { useNavigate,useLocation } from 'react-router-dom';
 import { initializeSocket,receiveMessage,sendMessage } from '../config/socket';
 import { UserContext } from '../context/user.context.jsx'
 import Markdown from 'markdown-to-jsx'
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/themes/prism-tomorrow.css"; // VS Code-like dark theme
+import "prismjs/components/prism-javascript";
 
 
 function SyntaxHighlightedCode(props) {
@@ -104,21 +108,38 @@ function WriteAiMessage(message) {
 
 
   useEffect(() => {
+    console.log("this is the project is",project._id);
+  
+  initializeSocket(project._id);
+  receiveMessage('projectMessage', data => {
+  let message = data.message;
 
-    initializeSocket(project._id);
-   receiveMessage('projectMessage', data => {
-  const message = JSON.parse(data.message); // already an object
+  try {
+    // Parse only if it’s a string and looks like JSON
+    if (typeof message === 'string' && message.trim().startsWith('{')) {
+      message = JSON.parse(message);
+    }
+  } catch (e) {
+    console.warn('Invalid JSON, keeping as plain text:', message);
+  }
+
   console.log(message);
-  if (message.fileTree) {
+
+  if (message && typeof message === 'object' && message.fileTree) {
     setfileTree(message.fileTree);
   }
-  setMessages(prev => [...prev, data]);
+
+  setMessages(prev => [...prev, { ...data, message }]);
 });
 
 
+
     axios.get(`/project/get-project/${location.state.project._id}`).then((res) => {
-      console.log('Project fetched successfully:', res.data.project);
-        setProject(res.data.project);
+    console.log('Project fetched successfully:', res.data.project);
+    setProject(res.data.project);
+  
+
+       
        
 
      
@@ -243,50 +264,79 @@ function WriteAiMessage(message) {
             </div>
           </div>
           {currentFile && (
-            <div className="code-editor flex flex-col flex-grow h-full">
-
-                <div className="top flex ">
-                  {
-                                openfiles.map((file, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentFile(file)}
-                                        className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
-                                        <p
-                                            className='font-semibold text-lg'
-                                        >{file}</p>
-                                    </button>
-                                ))
-                    }
-                </div>
-                <div className="bottom flex flex-grow">
-                  {
-                    fileTree[currentFile]&&(
-                      <textarea
-                          value={
-                            typeof fileTree[currentFile].content === 'string'
-                              ? fileTree[currentFile].content
-                              : JSON.stringify(fileTree[currentFile].content, null, 2)
-                          }
-                          onChange={(e) => {
-                            setfileTree({
-                              ...fileTree,
-                              [currentFile]: {
-                                content: e.target.value
-                              }
-                            });
-                          }}
-                          className="w-full h-full p-4 bg-slate-50 outline-none"
-                        />
-  
-                    )
-                  }
-
-                </div>
-
-            </div>
-
-          )}
+  <div className="code-editor flex flex-col flex-grow h-full">
+    <div className="top flex ">
+      {openfiles.map((file, index) => (
+        <button
+          key={index}
+          onClick={() => setCurrentFile(file)}
+          className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
+          <p className='font-semibold text-lg'>{file}</p>
+        </button>
+      ))}
+    </div>
+    <div className="bottom flex flex-grow bg-[#1e1e1e] rounded-b-lg shadow-inner border-t border-slate-400 overflow-hidden">
+      {fileTree[currentFile] && (
+        <div className="flex w-full h-full">
+          {/* Line Numbers */}
+          <div className="bg-[#23272e] text-[#6a9955] text-xs py-4 px-2 select-none font-mono min-w-8 text-right">
+            {Array.from(
+              {
+                length:
+                  (
+                    typeof fileTree[currentFile].file.contents === 'string'
+                      ? fileTree[currentFile].file.contents
+                      : JSON.stringify(fileTree[currentFile].file.contents, null, 2)
+                  ).split('\n').length,
+              },
+              (_, i) => (
+                <div key={i} className="h-5 leading-5">{i + 1}</div>
+              )
+            )}
+          </div>
+          {/* Code Editor with Syntax Highlighting */}
+          <div className="flex-grow h-full overflow-auto">
+            <Editor
+              value={
+                typeof fileTree[currentFile].file.contents === 'string'
+                  ? fileTree[currentFile].file.contents
+                  : JSON.stringify(fileTree[currentFile].file.contents, null, 2)
+              }
+              onValueChange={code => {
+                setfileTree({
+                  ...fileTree,
+                  [currentFile]: {
+                    file: {
+                      ...fileTree[currentFile].file,
+                      contents: code,
+                    },
+                  },
+                });
+              }}
+              highlight={code => Prism.highlight(code, Prism.languages.javascript, 'javascript')}
+              padding={16}
+              className="font-mono text-sm outline-none min-h-full bg-transparent text-[#d4d4d4]"
+              style={{
+                background: "transparent",
+                minHeight: "100%",
+                width: "100%",
+                color: "#d4d4d4",
+                fontFamily: "Fira Mono, Menlo, Monaco, 'Courier New', monospace"
+              }}
+              textareaId="codeArea"
+              textareaClassName="w-full h-full"
+              preClassName="!bg-transparent"
+              spellCheck={false}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
           
 
 

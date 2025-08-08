@@ -56,9 +56,11 @@ io.on('connection', socket => {
     socket.roomId=socket.project._id.toString()
     
     
+    
     socket.join(socket.roomId); 
     
     socket.on('projectMessage', async data => {
+        console.log(`✅ Socket connected: ${socket.id}`);
         const message = data.message;
         const aiIsPresentInMessage = message.includes('@ai');
         socket.broadcast.to(socket.roomId).emit('projectMessage', data);
@@ -70,8 +72,8 @@ io.on('connection', socket => {
             const result = await generateResult(prompt);
 
 
-            io.to(socket.roomId).emit('project-message', {
-                 message: JSON.stringify({ text: result }),
+            io.to(socket.roomId).emit('projectMessage', {
+                 message:  result ,
                 sender: {
                     _id: 'ai',
                     email: 'AI'
@@ -81,7 +83,9 @@ io.on('connection', socket => {
 
             return
         }
-        console.log("user connected");
+
+         console.log("user connected");
+       
          // Broadcast to all clients in the project room
     });
   socket.on('disconnect', () => { 
