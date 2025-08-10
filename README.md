@@ -54,8 +54,9 @@ Built with **MongoDB, Express.js, React.js, Node.js, Socket.IO**, and **Google G
 
 Follow these steps to run the project locally:
 
-### **1️⃣ Clone the Repository**
 ```bash
+### **1️⃣ Clone the Repository**
+
 git clone https://github.com/your-username/realtime-chat-gemini.git
 cd realtime-chat-gemini
 
