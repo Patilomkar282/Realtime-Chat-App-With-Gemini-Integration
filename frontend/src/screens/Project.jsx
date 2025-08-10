@@ -83,27 +83,85 @@ function WriteAiMessage(message) {
   let messageObject;
 
   if (typeof message === 'object') {
-    // Already parsed (socket sent an object)
     messageObject = message;
   } else {
     try {
       messageObject = JSON.parse(message);
     } catch {
-      messageObject = { text: String(message) }; // fallback
+      messageObject = { text: String(message) };
     }
   }
 
+  // If the message contains a functions array, display each function's details
+  if (Array.isArray(messageObject.functions)) {
+    return (
+      <div className="overflow-auto bg-slate-950 text-white rounded-sm p-2 space-y-4">
+        {messageObject.functions.map((fn, idx) => (
+          <div key={idx} className="space-y-2">
+            {fn.functionName && (
+              <div className="font-bold text-blue-300">{fn.functionName}</div>
+            )}
+            {fn.description && (
+              <div className="text-sm text-gray-300">{fn.description}</div>
+            )}
+            {fn.code && (
+              <pre className="bg-black text-green-300 p-2 rounded overflow-x-auto text-xs">
+                <code>{fn.code}</code>
+              </pre>
+            )}
+            {fn.example && (
+              <div className="text-xs text-gray-400">
+                <span className="font-semibold">Example:</span> {fn.example}
+              </div>
+            )}
+            {fn.returnType && (
+              <div className="text-xs text-gray-400">
+                <span className="font-semibold">Returns:</span> {fn.returnType}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Default rendering for other AI messages
   return (
-    <div className="overflow-auto bg-slate-950 text-white rounded-sm p-2">
-      <Markdown
-        children={messageObject.text}
-        options={{
-          overrides: { code: SyntaxHighlightedCode },
-        }}
-      />
+    <div className="overflow-auto bg-slate-950 text-white rounded-sm p-2 space-y-2">
+      {/* Show description if available */}
+      {messageObject.description && (
+        <p className="text-sm text-gray-300">{messageObject.description}</p>
+      )}
+
+      {/* Show code with syntax highlighting */}
+      {messageObject.code && (
+        <pre className="bg-black text-green-300 p-2 rounded overflow-x-auto text-xs">
+          <code>{messageObject.code}</code>
+        </pre>
+      )}
+
+      {/* Show compilation steps */}
+      {messageObject.compilationSteps && Array.isArray(messageObject.compilationSteps) && (
+        <ul className="list-disc pl-5 text-sm text-gray-400">
+          {messageObject.compilationSteps.map((step, idx) => (
+            <li key={idx}>{step}</li>
+          ))}
+        </ul>
+      )}
+
+      {/* Fallback: render markdown text */}
+      {messageObject.text && (
+        <Markdown
+          children={messageObject.text}
+          options={{
+            overrides: { code: SyntaxHighlightedCode },
+          }}
+        />
+      )}
     </div>
   );
 }
+
 
 
 
@@ -275,7 +333,7 @@ function WriteAiMessage(message) {
         </button>
       ))}
     </div>
-    <div className="bottom flex flex-grow bg-[#1e1e1e] rounded-b-lg shadow-inner border-t border-slate-400 overflow-hidden">
+    <div className="bottom flex flex-grow bg-[#1e1e1e] rounded-b-lg shadow-inner border-t border-slate-800 overflow-hidden">
       {fileTree[currentFile] && (
         <div className="flex w-full h-full">
           {/* Line Numbers */}
